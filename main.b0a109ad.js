@@ -37667,6 +37667,8 @@ function () {
     _classCallCheck(this, RAF);
 
     this.subscribers = [];
+    this.startTime = Date.now();
+    this.time = this.startTime;
     this.update();
   }
 
@@ -37686,8 +37688,11 @@ function () {
   }, {
     key: "update",
     value: function update() {
+      var _this = this;
+
+      this.time = Date.now() - this.startTime;
       this.subscribers.forEach(function (sub) {
-        sub.execute();
+        sub.execute(_this.time);
       });
       requestAnimationFrame(this.update.bind(this));
     }
@@ -37720,11 +37725,11 @@ function () {
     }
   }, {
     key: "execute",
-    value: function execute() {
-      var force = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+    value: function execute(time) {
+      var force = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
       if (this.isPlaying || force) {
-        this.f();
+        this.f(time);
       }
     }
   }]);
@@ -42004,7 +42009,63 @@ function composer(_ref) {
 exports.default = composer;
 },{"three/examples/jsm/postprocessing/UnrealBloomPass":"node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js","three/examples/jsm/postprocessing/EffectComposer":"node_modules/three/examples/jsm/postprocessing/EffectComposer.js","three/examples/jsm/postprocessing/RenderPass":"node_modules/three/examples/jsm/postprocessing/RenderPass.js","three":"node_modules/three/build/three.module.js"}],"src/assets/spitfire-mesh.glb":[function(require,module,exports) {
 module.exports = "/spitfire-mesh.e9053cc7.glb";
-},{}],"src/main.ts":[function(require,module,exports) {
+},{}],"src/particles.ts":[function(require,module,exports) {
+"use strict";
+
+var __importDefault = this && this.__importDefault || function (mod) {
+  return mod && mod.__esModule ? mod : {
+    "default": mod
+  };
+};
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var three_1 = require("three");
+
+var raf_1 = __importDefault(require("./utils/raf"));
+
+function createParticles(color) {
+  var geometry = new three_1.BufferGeometry();
+  var material = new three_1.PointsMaterial({
+    color: color,
+    opacity: 0.6,
+    transparent: true,
+    size: 0.03
+  });
+  var data = [];
+  var vertices = [];
+
+  for (var i = 0; i < 3000; i++) {
+    var pos = Math.random() * Math.PI * 2;
+    var dist = Math.random() / Math.random() * 2;
+    data.push({
+      x: Math.sin(pos) * dist,
+      y: Math.cos(pos) * dist,
+      z: Math.random() * 6 - 3
+    });
+  }
+
+  data.forEach(function (p) {
+    vertices.push(p.x, p.y, p.z + 3);
+  });
+  geometry.setAttribute('position', new three_1.Float32BufferAttribute(vertices, 3));
+  var particles = new three_1.Points(geometry, material);
+  raf_1.default.subscribe(function (time) {
+    vertices = [];
+    data.forEach(function (p) {
+      var deltaZ = time / 100;
+      var newPos = (p.z - deltaZ) % 4;
+      vertices.push(p.x, p.y, newPos + 3);
+    });
+    geometry.setAttribute('position', new three_1.Float32BufferAttribute(vertices, 3));
+  });
+  return particles;
+}
+
+exports.default = createParticles;
+},{"three":"node_modules/three/build/three.module.js","./utils/raf":"src/utils/raf.ts"}],"src/main.ts":[function(require,module,exports) {
 "use strict";
 
 var __importDefault = this && this.__importDefault || function (mod) {
@@ -42027,6 +42088,8 @@ var effects_1 = __importDefault(require("./effects"));
 
 var spitfire_mesh_glb_1 = __importDefault(require("./assets/spitfire-mesh.glb"));
 
+var particles_1 = __importDefault(require("./particles"));
+
 var three_1 = require("three");
 
 var _three_helpers_1$init = three_helpers_1.init(),
@@ -42046,18 +42109,14 @@ var _effects_1$default = effects_1.default({
 
 camera.position.z = 3;
 camera.position.x = -4;
-camera.position.y = 3; // const a = new Mesh(
-//   new BoxGeometry(0.1, 0.1, 0.1),
-//   new MeshBasicMaterial({ color: 0xFF0000 })
-// )
-// a.position.set(0, 0, 1.1)
-// scene.add(a)
-
+camera.position.y = 3;
 var spitfire = new Plane_1.default({
   model: spitfire_mesh_glb_1.default,
   propeller: ['Cube006', 'Cube007', 'Cube008', 'BOUT'],
-  color: 0x0099FF
+  color: 0xFF9900
 });
+var particles = particles_1.default(0xFF9900);
+scene.add(particles);
 spitfire.onReady(function () {
   scene.add(spitfire.object);
   spitfire.object.children.forEach(function (part) {
@@ -42065,10 +42124,7 @@ spitfire.onReady(function () {
       part.position.set(0, 2.9, -0.1);
     });
   });
-  var startTime = Date.now();
-  var time = startTime;
-  raf_1.default.subscribe(function () {
-    time = Date.now() - startTime;
+  raf_1.default.subscribe(function (time) {
     camera.lookAt(0, 0, 0); // helice
 
     var rpm = 200;
@@ -42094,7 +42150,7 @@ spitfire.onReady(function () {
     composer.render();
   });
 });
-},{"./utils/three-helpers":"src/utils/three-helpers.ts","./utils/raf":"src/utils/raf.ts","./plane/Plane":"src/plane/Plane.ts","./effects":"src/effects.ts","./assets/spitfire-mesh.glb":"src/assets/spitfire-mesh.glb","three":"node_modules/three/build/three.module.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"./utils/three-helpers":"src/utils/three-helpers.ts","./utils/raf":"src/utils/raf.ts","./plane/Plane":"src/plane/Plane.ts","./effects":"src/effects.ts","./assets/spitfire-mesh.glb":"src/assets/spitfire-mesh.glb","./particles":"src/particles.ts","three":"node_modules/three/build/three.module.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -42122,7 +42178,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "63361" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "64985" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
