@@ -19,10 +19,10 @@ camera.position.y = 3
 const spitfire = new Plane({
   model: spitfireModel,
   propeller: ['Cube006', 'Cube007', 'Cube008', 'BOUT'],
-  color: 0x0099FF
+  color: 0xFF9900
 })
 
-const particles = createParticles(0x0099FF)
+const particles = createParticles(0xFF9900)
 scene.add(particles)
 
 spitfire.onReady(() => {
