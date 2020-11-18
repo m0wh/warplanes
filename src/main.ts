@@ -3,6 +3,7 @@ import raf from './utils/raf'
 import Plane from './plane/Plane'
 import fx from './effects'
 import spitfireModel from './assets/spitfire-mesh.glb'
+import createParticles from './particles'
 import { Color } from 'three'
 
 const { camera, renderer, scene } = init()
@@ -15,29 +16,20 @@ camera.position.z = 3
 camera.position.x = -4
 camera.position.y = 3
 
-// const a = new Mesh(
-//   new BoxGeometry(0.1, 0.1, 0.1),
-//   new MeshBasicMaterial({ color: 0xFF0000 })
-// )
-// a.position.set(0, 0, 1.1)
-// scene.add(a)
-
 const spitfire = new Plane({
   model: spitfireModel,
   propeller: ['Cube006', 'Cube007', 'Cube008', 'BOUT'],
   color: 0x0099FF
 })
 
+const particles = createParticles(0x0099FF)
+scene.add(particles)
+
 spitfire.onReady(() => {
   scene.add(spitfire.object)
   spitfire.object.children.forEach(part => { part.children.forEach(part => { part.position.set(0, 2.9, -0.1) }) })
 
-  const startTime = Date.now()
-  let time = startTime
-
-  raf.subscribe(() => {
-    time = Date.now() - startTime
-
+  raf.subscribe((time) => {
     camera.lookAt(0, 0, 0)
 
     // helice
