@@ -12,7 +12,6 @@ export function init () {
   document.body.appendChild(renderer.domElement)
 
   controls.enableDamping = true
-  controls.enableZoom = false
 
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight

@@ -11,7 +11,7 @@ const loader = new GLTFLoader()
 loader.setDRACOLoader(draco)
 
 export default class Plane {
-  private ready: boolean = false
+  public ready: boolean = false
   private callbacks: Function[] = []
   private propellerParts: string[]
   public object: Group = new Group()
@@ -21,6 +21,7 @@ export default class Plane {
     loader.load(params.model, gltf => {
       this.object.add(this.createMesh(gltf, params.propeller, true, params.color))
       this.object.add(this.createMesh(gltf, params.propeller, false, params.color))
+      this.ready = true
       this.callbacks.forEach(c => c())
     })
   }

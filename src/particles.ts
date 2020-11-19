@@ -7,14 +7,14 @@ export default function createParticles (color: number) {
     color,
     opacity: 0.6,
     transparent: true,
-    size: 0.03
+    size: 0.05
   })
 
   const data = []
   let vertices = []
-  for (let i = 0; i < 3000; i++) {
+  for (let i = 0; i < 2000; i++) {
     const pos = Math.random() * Math.PI * 2
-    const dist = Math.random() / Math.random() * 2
+    const dist = Math.random() / Math.random() * 3
     data.push({
       x: Math.sin(pos) * dist,
       y: Math.cos(pos) * dist,
@@ -32,7 +32,7 @@ export default function createParticles (color: number) {
   raf.subscribe((time) => {
     vertices = []
     data.forEach(p => {
-      const deltaZ = time / 100
+      const deltaZ = time / 200
       const newPos = (p.z - deltaZ) % 4
       vertices.push(p.x, p.y, newPos + 3)
     })
