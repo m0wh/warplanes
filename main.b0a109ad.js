@@ -37777,7 +37777,6 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
   controls.enableDamping = true;
-  controls.enableZoom = false;
   window.addEventListener('resize', function () {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -41065,6 +41064,8 @@ function () {
 
       _this.object.add(_this.createMesh(gltf, params.propeller, false, params.color));
 
+      _this.ready = true;
+
       _this.callbacks.forEach(function (c) {
         return c();
       });
@@ -42032,14 +42033,14 @@ function createParticles(color) {
     color: color,
     opacity: 0.6,
     transparent: true,
-    size: 0.03
+    size: 0.05
   });
   var data = [];
   var vertices = [];
 
-  for (var i = 0; i < 3000; i++) {
+  for (var i = 0; i < 2000; i++) {
     var pos = Math.random() * Math.PI * 2;
-    var dist = Math.random() / Math.random() * 2;
+    var dist = Math.random() / Math.random() * 3;
     data.push({
       x: Math.sin(pos) * dist,
       y: Math.cos(pos) * dist,
@@ -42055,7 +42056,7 @@ function createParticles(color) {
   raf_1.default.subscribe(function (time) {
     vertices = [];
     data.forEach(function (p) {
-      var deltaZ = time / 100;
+      var deltaZ = time / 200;
       var newPos = (p.z - deltaZ) % 4;
       vertices.push(p.x, p.y, newPos + 3);
     });
@@ -42066,6 +42067,7 @@ function createParticles(color) {
 
 exports.default = createParticles;
 },{"three":"node_modules/three/build/three.module.js","./utils/raf":"src/utils/raf.ts"}],"src/main.ts":[function(require,module,exports) {
+var global = arguments[3];
 "use strict";
 
 var __importDefault = this && this.__importDefault || function (mod) {
@@ -42109,47 +42111,79 @@ var _effects_1$default = effects_1.default({
 
 camera.position.z = 3;
 camera.position.x = -4;
-camera.position.y = 3;
-var spitfire = new Plane_1.default({
+camera.position.y = -3;
+var planes = [new Plane_1.default({
   model: spitfire_mesh_glb_1.default,
   propeller: ['Cube006', 'Cube007', 'Cube008', 'BOUT'],
   color: 0xFF9900
-});
+}), new Plane_1.default({
+  model: spitfire_mesh_glb_1.default,
+  propeller: ['Cube006', 'Cube007', 'Cube008', 'BOUT'],
+  color: 0xFF9900
+}), new Plane_1.default({
+  model: spitfire_mesh_glb_1.default,
+  propeller: ['Cube006', 'Cube007', 'Cube008', 'BOUT'],
+  color: 0xFF9900
+})];
 var particles = particles_1.default(0xFF9900);
 scene.add(particles);
-spitfire.onReady(function () {
-  scene.add(spitfire.object);
-  spitfire.object.children.forEach(function (part) {
-    part.children.forEach(function (part) {
-      part.position.set(0, 2.9, -0.1);
+planes.forEach(function (plane) {
+  plane.onReady(function () {
+    if (planes.every(function (p) {
+      return p.ready;
+    })) start();
+  });
+});
+
+function start() {
+  planes.forEach(function (plane) {
+    scene.add(plane.object);
+    plane.object.children.forEach(function (part) {
+      part.children.forEach(function (part) {
+        part.position.set(0, 2.9, -0.1);
+      });
     });
   });
   raf_1.default.subscribe(function (time) {
-    camera.lookAt(0, 0, 0); // helice
-
+    camera.lookAt(0, 0, 0);
     var rpm = 200;
-    spitfire.object.getObjectByName('propeller').rotation.z = time * rpm * Math.PI / 30000;
-    var perturbations = {
-      rotation: {
-        x: (Math.cos(time / 1724) / 10 + Math.cos(time / 674) / 50 + Math.cos(time / -220) / 100) * -0.8,
-        y: 0,
-        z: Math.sin(time / -2030) / 6 + Math.sin(time / 930) / 12 + Math.sin(time / -574) / 25 + Math.sin(time / 210) / 50 + Math.sin(time / 70) / 300
-      },
-      position: {
-        x: 0,
-        y: Math.sin(time / 1724) / 10 + Math.sin(time / 674) / 50 + Math.sin(time / -220) / 100 + Math.sin(time / 40) / 600,
-        z: 0
-      }
-    };
-    spitfire.object.rotation.x = perturbations.rotation.x;
-    spitfire.object.rotation.y = perturbations.rotation.y;
-    spitfire.object.rotation.z = perturbations.rotation.z;
-    spitfire.object.position.x = perturbations.position.x;
-    spitfire.object.position.y = perturbations.position.y;
-    spitfire.object.position.z = perturbations.position.z;
+    planes.forEach(function (plane, i) {
+      plane.object.getObjectByName('propeller').rotation.z = time * rpm * Math.PI / 30000;
+      var val = i * Math.PI * 2 / planes.length - 1 + time / 500;
+      var global = {
+        rotation: {
+          x: 0,
+          y: 0,
+          z: -val - Math.PI / 3
+        },
+        position: {
+          x: Math.sin(val) * 2,
+          y: Math.cos(val) * 1,
+          z: Math.cos(val) * -2
+        }
+      };
+      var perturbations = {
+        rotation: {
+          x: (Math.cos(time / 1724) / 10 + Math.cos(time / (674 + i * 4)) / 50 + Math.cos(time / (-220 - i * 10)) / 100) * -0.8,
+          y: 0,
+          z: Math.sin((time - i * 137) / -2030) / 6 + Math.sin((time - i * 337) / 930) / 12 + Math.sin((time - i * 783) / (-574 + i * 9)) / 25 + Math.sin((time - i * 824) / (210 + i * 15)) / 50 + Math.sin(time / (70 + i * 30)) / 300
+        },
+        position: {
+          x: 0,
+          y: Math.sin((time + i * 856) / (1724 - i)) / 10 + Math.sin(time / (674 + i)) / 50 + Math.sin((time - i * 736) / -220) / 100 + Math.sin(time / (40 + i)) / 600,
+          z: Math.cos((time + i * 276) / (2947 + i * 10)) / 5 + Math.sin((time - i * 1022) / (638 + i)) / 20
+        }
+      };
+      plane.object.rotation.x = (perturbations.rotation.x + global.rotation.x) % Math.PI * 2;
+      plane.object.rotation.y = (perturbations.rotation.y + global.rotation.y) % Math.PI * 2;
+      plane.object.rotation.z = (perturbations.rotation.z + global.rotation.z) % Math.PI * 2;
+      plane.object.position.x = perturbations.position.x + global.position.x;
+      plane.object.position.y = perturbations.position.y + global.position.y;
+      plane.object.position.z = perturbations.position.z + global.position.z;
+    });
     composer.render();
   });
-});
+}
 },{"./utils/three-helpers":"src/utils/three-helpers.ts","./utils/raf":"src/utils/raf.ts","./plane/Plane":"src/plane/Plane.ts","./effects":"src/effects.ts","./assets/spitfire-mesh.glb":"src/assets/spitfire-mesh.glb","./particles":"src/particles.ts","three":"node_modules/three/build/three.module.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
@@ -42178,7 +42212,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "64985" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52408" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
